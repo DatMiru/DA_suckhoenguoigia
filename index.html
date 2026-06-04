@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PulseWave Monitor — Health Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/paho-mqtt@1.1.0/paho-mqtt.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;900&display=swap" rel="stylesheet">
 
   <style>
@@ -466,7 +466,7 @@
     const topic  = document.getElementById('mqttTopic').value;
     const id     = 'web_' + Math.random().toString(16).substr(2, 8);
 
-    client = new Paho.MQTT.Client(broker, port, id);
+    client = new Paho.Client(broker, port, id);
     client.onConnectionLost = () => { isConnected = false; setStatus(false, 'Mất kết nối'); };
     client.onMessageArrived = onMsg;
 
@@ -478,9 +478,11 @@
         setStatus(true, 'Kết nối: ' + topic);
         data.fill(null); ecgChart.update('none');
       },
-      onFailure: () => setStatus(false, 'Kết nối thất bại'),
+      onFailure: (e) => setStatus(false, 'Thất bại: ' + (e.errorMessage || e.errorCode)),
       useSSL: port === 443 || port === 8084,
-      timeout: 4
+      cleanSession: true,
+      keepAliveInterval: 30,
+      timeout: 10
     });
   }
 
