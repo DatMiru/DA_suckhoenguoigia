@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PulseWave Monitor — Health Dashboard</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/paho-mqtt@1.1.0/paho-mqtt.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;900&display=swap" rel="stylesheet">
 
@@ -352,7 +352,7 @@
           <input id="mqttTopic" class="inp" value="esp32/pulsewave">
         </div>
         <div>
-          <label class="inp-lbl">Port</label>
+      <label class="inp-lbl">Port (8083=WS / 8084=WSS)</label>
           <input id="mqttPort" class="inp" value="8083" type="number">
         </div>
       </div>
@@ -452,6 +452,18 @@
       fakeIdx++;
     }
   }, 40);
+
+  // ── Auto-detect HTTPS → dùng WSS (port 8084) ────────
+  window.addEventListener('DOMContentLoaded', () => {
+    if (location.protocol === 'https:') {
+      document.getElementById('mqttPort').value = '8084';
+      const hint = document.querySelector('.hint');
+      const note = document.createElement('div');
+      note.style.cssText = 'margin-top:6px;padding:6px 10px;border-radius:8px;font-size:.68rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7';
+      note.innerHTML = '🔒 HTTPS detected → dùng port <b>8084</b> (WSS)';
+      hint.after(note);
+    }
+  });
 
   // ── MQTT ──────────────────────────────────────────
   let client = null, isConnected = false, lastBpm = 0;
