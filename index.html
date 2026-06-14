@@ -1,35 +1,45 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PulseWave Monitor — Health Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/paho-mqtt@1.1.0/paho-mqtt.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;900&display=swap"
+    rel="stylesheet">
 
   <style>
     :root {
-      --bg:       #07070f;
-      --panel:    rgba(18,18,28,0.85);
-      --border:   rgba(255,255,255,0.07);
-      --green:    #10b981;
-      --blue:     #3b82f6;
-      --red:      #ef4444;
-      --yellow:   #f59e0b;
-      --dim:      rgba(255,255,255,0.4);
+      --bg: #07070f;
+      --panel: rgba(18, 18, 28, 0.85);
+      --border: rgba(255, 255, 255, 0.07);
+      --green: #10b981;
+      --blue: #3b82f6;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --dim: rgba(255, 255, 255, 0.4);
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-    html, body {
+    html,
+    body {
       height: 100vh;
       overflow: hidden;
       font-family: 'Inter', sans-serif;
       background: var(--bg);
       background-image:
-        radial-gradient(ellipse 50% 60% at 5% 50%, rgba(16,185,129,.06) 0%, transparent 55%),
-        radial-gradient(ellipse 40% 50% at 95% 20%, rgba(59,130,246,.06) 0%, transparent 55%);
+        radial-gradient(ellipse 50% 60% at 5% 50%, rgba(16, 185, 129, .06) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 50% at 95% 20%, rgba(59, 130, 246, .06) 0%, transparent 55%);
       color: #f0f0ff;
     }
 
@@ -47,7 +57,7 @@
       justify-content: space-between;
       padding: 0 20px;
       border-bottom: 1px solid var(--border);
-      background: rgba(7,7,15,0.9);
+      background: rgba(7, 7, 15, 0.9);
       backdrop-filter: blur(10px);
     }
 
@@ -62,30 +72,48 @@
     }
 
     .badge {
-      display: flex; align-items: center; gap: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
       padding: 4px 12px;
       border-radius: 99px;
-      font-size: .75rem; font-weight: 600;
-      background: rgba(239,68,68,.12);
-      border: 1px solid rgba(239,68,68,.25);
+      font-size: .75rem;
+      font-weight: 600;
+      background: rgba(239, 68, 68, .12);
+      border: 1px solid rgba(239, 68, 68, .25);
       color: var(--red);
       transition: all .3s;
     }
+
     .badge.connected {
-      background: rgba(16,185,129,.12);
-      border-color: rgba(16,185,129,.25);
+      background: rgba(16, 185, 129, .12);
+      border-color: rgba(16, 185, 129, .25);
       color: var(--green);
     }
+
     .badge-dot {
-      width: 7px; height: 7px;
+      width: 7px;
+      height: 7px;
       border-radius: 50%;
       background: currentColor;
     }
+
     .badge.connected .badge-dot {
       box-shadow: 0 0 6px currentColor;
       animation: blink 2s infinite;
     }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .3
+      }
+    }
 
     /* ── MAIN BODY ───────────────────────────── */
     .main {
@@ -102,7 +130,7 @@
       padding: 12px;
       border-right: 1px solid var(--border);
       overflow-y: auto;
-      background: rgba(10,10,18,0.5);
+      background: rgba(10, 10, 18, 0.5);
     }
 
     /* 2x2 metrics grid */
@@ -121,7 +149,10 @@
       overflow: hidden;
       transition: border-color .3s;
     }
-    .metric:hover { border-color: rgba(255,255,255,.14); }
+
+    .metric:hover {
+      border-color: rgba(255, 255, 255, .14);
+    }
 
     .metric-lbl {
       font-size: .6rem;
@@ -138,20 +169,40 @@
       font-weight: 900;
       line-height: 1;
     }
-    .metric-unit { font-size: .7rem; color: var(--dim); margin-top: 2px; }
 
-    .vgreen { color: var(--green); text-shadow: 0 0 14px rgba(16,185,129,.35); }
-    .vblue  { color: var(--blue);  text-shadow: 0 0 14px rgba(59,130,246,.35); }
-    .vyellow{ color: var(--yellow);text-shadow: 0 0 14px rgba(245,158,11,.35); }
+    .metric-unit {
+      font-size: .7rem;
+      color: var(--dim);
+      margin-top: 2px;
+    }
+
+    .vgreen {
+      color: var(--green);
+      text-shadow: 0 0 14px rgba(16, 185, 129, .35);
+    }
+
+    .vblue {
+      color: var(--blue);
+      text-shadow: 0 0 14px rgba(59, 130, 246, .35);
+    }
+
+    .vyellow {
+      color: var(--yellow);
+      text-shadow: 0 0 14px rgba(245, 158, 11, .35);
+    }
 
     /* battery bar */
     .bat-bar {
-      margin-top: 6px; height: 3px;
-      background: rgba(255,255,255,.08);
-      border-radius: 2px; overflow: hidden;
+      margin-top: 6px;
+      height: 3px;
+      background: rgba(255, 255, 255, .08);
+      border-radius: 2px;
+      overflow: hidden;
     }
+
     .bat-fill {
-      height: 100%; border-radius: 2px;
+      height: 100%;
+      border-radius: 2px;
       background: linear-gradient(90deg, var(--red), var(--yellow), var(--green));
       transition: width .6s;
       width: 0%;
@@ -160,32 +211,93 @@
     /* status card — full width */
     .status-card {
       background: var(--panel);
-      border: 1px solid rgba(16,185,129,.25);
+      border: 1px solid rgba(16, 185, 129, .25);
       border-radius: 12px;
       padding: 10px 14px;
-      display: flex; align-items: center; gap: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
       transition: border-color .3s, background .3s;
     }
-    .status-icon { font-size: 1.4rem; }
-    .status-txt  { font-size: .9rem; font-weight: 700; color: var(--green); }
-    .status-card.danger { border-color: rgba(239,68,68,.5); }
-    .status-card.danger .status-txt { color: var(--red); animation: flash .5s infinite; }
-    .status-card.warn   { border-color: rgba(245,158,11,.4); }
-    .status-card.warn   .status-txt { color: var(--yellow); }
-    @keyframes flash { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    .status-icon {
+      font-size: 1.4rem;
+    }
+
+    .status-txt {
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .status-card.danger {
+      border-color: rgba(239, 68, 68, .5);
+    }
+
+    .status-card.danger .status-txt {
+      color: var(--red);
+      animation: flash .5s infinite;
+    }
+
+    .status-card.warn {
+      border-color: rgba(245, 158, 11, .4);
+    }
+
+    .status-card.warn .status-txt {
+      color: var(--yellow);
+    }
+
+    @keyframes flash {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .2
+      }
+    }
 
     /* heart beat icon */
     .hb-icon {
-      position: absolute; top: 8px; right: 8px;
-      font-size: 1rem; color: var(--green); opacity: 0;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-size: 1rem;
+      color: var(--green);
+      opacity: 0;
     }
-    .hb-anim { animation: heartbeat .8s ease-out; }
+
+    .hb-anim {
+      animation: heartbeat .8s ease-out;
+    }
+
     @keyframes heartbeat {
-      0%  { transform:scale(1);   opacity:.8 }
-      20% { transform:scale(1.4); opacity:1  }
-      40% { transform:scale(1);   opacity:.8 }
-      60% { transform:scale(1.3); opacity:1  }
-      100%{ transform:scale(1);   opacity:0  }
+      0% {
+        transform: scale(1);
+        opacity: .8
+      }
+
+      20% {
+        transform: scale(1.4);
+        opacity: 1
+      }
+
+      40% {
+        transform: scale(1);
+        opacity: .8
+      }
+
+      60% {
+        transform: scale(1.3);
+        opacity: 1
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 0
+      }
     }
 
     /* ── MQTT FORM ───────────────────────────── */
@@ -200,11 +312,15 @@
       margin-top: 2px;
     }
 
-    .form-row { display: grid; grid-template-columns: 1fr 80px; gap: 6px; }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 80px;
+      gap: 6px;
+    }
 
     .inp {
       width: 100%;
-      background: rgba(0,0,0,.25);
+      background: rgba(0, 0, 0, .25);
       border: 1px solid var(--border);
       color: #f0f0ff;
       padding: 7px 10px;
@@ -214,40 +330,66 @@
       transition: border-color .2s;
       margin-bottom: 6px;
     }
-    .inp:focus { outline: none; border-color: var(--green); box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
-    .inp-lbl { font-size: .65rem; color: var(--dim); margin-bottom: 3px; display: block; }
+
+    .inp:focus {
+      outline: none;
+      border-color: var(--green);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, .18);
+    }
+
+    .inp-lbl {
+      font-size: .65rem;
+      color: var(--dim);
+      margin-bottom: 3px;
+      display: block;
+    }
 
     .btn-connect {
-      width: 100%; padding: 8px;
-      border: none; border-radius: 8px;
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
       font-family: 'Inter', sans-serif;
-      font-size: .8rem; font-weight: 700;
+      font-size: .8rem;
+      font-weight: 700;
       cursor: pointer;
-      background: var(--green); color: #000;
+      background: var(--green);
+      color: #000;
       transition: background .2s, transform .1s;
     }
-    .btn-connect:hover { background: #0ea5e9; transform: translateY(-1px); }
+
+    .btn-connect:hover {
+      background: #0ea5e9;
+      transform: translateY(-1px);
+    }
+
     .btn-connect.disconnect {
       background: transparent;
       border: 1px solid var(--red);
       color: var(--red);
     }
-    .btn-connect.disconnect:hover { background: rgba(239,68,68,.1); }
+
+    .btn-connect.disconnect:hover {
+      background: rgba(239, 68, 68, .1);
+    }
 
     .hint {
       font-size: .68rem;
       color: var(--dim);
       line-height: 1.5;
-      background: rgba(59,130,246,.08);
-      border: 1px solid rgba(59,130,246,.15);
+      background: rgba(59, 130, 246, .08);
+      border: 1px solid rgba(59, 130, 246, .15);
       border-radius: 8px;
       padding: 8px 10px;
       margin-top: 6px;
     }
+
     .hint code {
-      background: rgba(0,0,0,.4);
-      padding: 1px 4px; border-radius: 3px;
-      color: #93c5fd; font-size: .68rem;
+      background: rgba(0, 0, 0, .4);
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: #93c5fd;
+      font-size: .68rem;
     }
 
     /* ── CHART PANEL ─────────────────────────── */
@@ -259,322 +401,571 @@
     }
 
     .chart-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 10px; flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-shrink: 0;
     }
+
     .chart-title {
-      font-size: .7rem; font-weight: 600;
-      letter-spacing: 2px; text-transform: uppercase; color: var(--dim);
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dim);
     }
+
     .chart-stats {
-      display: flex; gap: 16px;
-      font-size: .72rem; color: var(--dim);
+      display: flex;
+      gap: 16px;
+      font-size: .72rem;
+      color: var(--dim);
     }
-    .chart-stats span { font-weight: 700; }
-    .cs-green { color: var(--green); }
-    .cs-blue  { color: var(--blue);  }
+
+    .chart-stats span {
+      font-weight: 700;
+    }
+
+    .cs-green {
+      color: var(--green);
+    }
+
+    .cs-blue {
+      color: var(--blue);
+    }
 
     .chart-wrap {
       flex: 1;
-      background: rgba(0,0,0,.2);
-      border: 1px solid rgba(16,185,129,.08);
+      background: rgba(0, 0, 0, .2);
+      border: 1px solid rgba(16, 185, 129, .08);
       border-radius: 12px;
       padding: 10px;
       min-height: 0;
     }
 
-    #ecgChart { width: 100% !important; height: 100% !important; }
+    #ecgChart {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* ── NO SIGNAL OVERLAY ───────────────────────── */
+    .chart-wrap {
+      position: relative;
+    }
+
+    /* cần để overlay absolute hoạt động */
+
+    .no-signal-overlay {
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: rgba(7, 7, 15, 0.82);
+      backdrop-filter: blur(3px);
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .4s ease;
+    }
+
+    .no-signal-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .ns-icon {
+      font-size: 2.2rem;
+      animation: ns-pulse 1.8s ease-in-out infinite;
+    }
+
+    .ns-text {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: rgba(255, 255, 255, 0.15);
+      text-transform: uppercase;
+      animation: ns-pulse 1.8s ease-in-out infinite;
+    }
+
+    .ns-sub {
+      font-size: .72rem;
+      color: rgba(255, 255, 255, 0.2);
+      letter-spacing: 1.5px;
+    }
+
+    /* scanline effect */
+    .no-signal-overlay::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      background: repeating-linear-gradient(0deg,
+          transparent,
+          transparent 3px,
+          rgba(0, 0, 0, 0.06) 3px,
+          rgba(0, 0, 0, 0.06) 4px);
+      pointer-events: none;
+    }
+
+    @keyframes ns-pulse {
+
+      0%,
+      100% {
+        opacity: .18;
+      }
+
+      50% {
+        opacity: .55;
+      }
+    }
   </style>
 </head>
+
 <body>
-<div class="app">
+  <div class="app">
 
-  <!-- HEADER -->
-  <header>
-    <div class="logo">⚕ PulseWave Monitor</div>
-    <div id="badge" class="badge">
-      <div class="badge-dot"></div>
-      <span id="badgeText">Disconnected</span>
-    </div>
-  </header>
+    <!-- HEADER -->
+    <header>
+      <div class="logo">⚕ PulseWave Monitor</div>
+      <div id="badge" class="badge">
+        <div class="badge-dot"></div>
+        <span id="badgeText">Disconnected</span>
+      </div>
+    </header>
 
-  <!-- MAIN -->
-  <div class="main">
+    <!-- MAIN -->
+    <div class="main">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
 
-      <!-- 2x2 Metrics -->
-      <div class="metrics-grid">
-        <!-- Heart Rate -->
-        <div class="metric">
-          <div id="heartIcon" class="hb-icon">♥</div>
-          <div class="metric-lbl">❤ Nhịp Tim</div>
-          <div class="metric-val vgreen"><span id="bpmValue">--</span></div>
-          <div class="metric-unit">BPM</div>
+        <!-- 2x2 Metrics -->
+        <div class="metrics-grid">
+          <!-- Heart Rate -->
+          <div class="metric">
+            <div id="heartIcon" class="hb-icon">♥</div>
+            <div class="metric-lbl">❤ Nhịp Tim</div>
+            <div class="metric-val vgreen"><span id="bpmValue">--</span></div>
+            <div class="metric-unit">BPM</div>
+          </div>
+          <!-- SpO2 -->
+          <div class="metric">
+            <div class="metric-lbl">💧 SpO2</div>
+            <div class="metric-val vblue"><span id="spo2Value">--</span></div>
+            <div class="metric-unit">%</div>
+          </div>
+          <!-- Battery -->
+          <div class="metric">
+            <div class="metric-lbl">🔋 Pin</div>
+            <div class="metric-val vyellow"><span id="batValue">--</span></div>
+            <div class="metric-unit">%</div>
+            <div class="bat-bar">
+              <div class="bat-fill" id="batBar"></div>
+            </div>
+          </div>
+          <!-- Voltage placeholder -->
+          <div class="metric">
+            <div class="metric-lbl">⚡ Điện Áp</div>
+            <div class="metric-val" style="color:#a78bfa;font-size:1.4rem"><span id="voltValue">--</span></div>
+            <div class="metric-unit">Volt</div>
+          </div>
         </div>
-        <!-- SpO2 -->
-        <div class="metric">
-          <div class="metric-lbl">💧 SpO2</div>
-          <div class="metric-val vblue"><span id="spo2Value">--</span></div>
-          <div class="metric-unit">%</div>
+
+        <!-- Status -->
+        <div class="status-card" id="statusCard">
+          <div class="status-icon" id="statusIcon">—</div>
+          <div class="status-txt" id="statusTxt">--</div>
         </div>
-        <!-- Battery -->
-        <div class="metric">
-          <div class="metric-lbl">🔋 Pin</div>
-          <div class="metric-val vyellow"><span id="batValue">--</span></div>
-          <div class="metric-unit">%</div>
-          <div class="bat-bar"><div class="bat-fill" id="batBar"></div></div>
+
+        <!-- MQTT Form -->
+        <div class="section-title">MQTT Setup</div>
+
+        <label class="inp-lbl">Broker URL</label>
+        <input id="mqttBroker" class="inp" value="broker.emqx.io">
+
+        <div class="form-row">
+          <div>
+            <label class="inp-lbl">Topic</label>
+            <input id="mqttTopic" class="inp" value="esp32/pulsewave">
+          </div>
+          <div>
+            <label class="inp-lbl">Port (8083=WS / 8084=WSS)</label>
+            <input id="mqttPort" class="inp" value="8083" type="number">
+          </div>
         </div>
-        <!-- Voltage placeholder -->
-        <div class="metric">
-          <div class="metric-lbl">⚡ Điện Áp</div>
-          <div class="metric-val" style="color:#a78bfa;font-size:1.4rem"><span id="voltValue">--</span></div>
-          <div class="metric-unit">Volt</div>
+
+        <button id="connectBtn" class="btn-connect" onclick="toggleConnection()">Connect</button>
+
+        <div class="hint">
+          JSON format:<br>
+          <code>{"wave":45.2,"bpm":75,"spo2":98,"bat":85}</code>
+        </div>
+
+      </aside>
+
+      <!-- CHART PANEL -->
+      <div class="chart-panel">
+        <div class="chart-header">
+          <div class="chart-title">📈 ECG / PPG Waveform — Thời Gian Thực</div>
+          <div class="chart-stats">
+            HR: <span class="cs-green" id="statBpm">--</span>&nbsp;BPM &nbsp;|&nbsp;
+            SpO2: <span class="cs-blue" id="statSpo2">--</span>&nbsp;%
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="ecgChart"></canvas>
+          <!-- NO SIGNAL overlay -->
+          <div class="no-signal-overlay visible" id="noSignalOverlay">
+            <div class="ns-icon" id="nsIcon">📵</div>
+            <div class="ns-text" id="nsText">NO SIGNAL</div>
+            <div class="ns-sub" id="nsSub">Waiting for device data...</div>
+          </div>
         </div>
       </div>
 
-      <!-- Status -->
-      <div class="status-card" id="statusCard">
-        <div class="status-icon" id="statusIcon">🟢</div>
-        <div class="status-txt"  id="statusTxt">AN TOÀN</div>
-      </div>
+    </div><!-- /.main -->
+  </div><!-- /.app -->
 
-      <!-- MQTT Form -->
-      <div class="section-title">MQTT Setup</div>
+  <script>
+    // ── CHART SETUP ───────────────────────────────────
+    const canvas = document.getElementById('ecgChart');
+    const ctx = canvas.getContext('2d');
+    const MAX_PTS = 200;
+    const data = new Array(MAX_PTS).fill(null);
+    const labels = new Array(MAX_PTS).fill('');
 
-      <label class="inp-lbl">Broker URL</label>
-      <input id="mqttBroker" class="inp" value="broker.emqx.io">
+    const ecgChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: '#10b981',
+          borderWidth: 1.8,
+          pointRadius: 0,
+          tension: 0.25,
+          fill: true,
+          backgroundColor: 'rgba(16,185,129,0.05)'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: { display: false },
+          y: {
+            display: true,
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: 'rgba(255,255,255,0.3)', maxTicksLimit: 6, font: { size: 10 } },
+            suggestedMin: -60, suggestedMax: 60
+          }
+        }
+      }
+    });
 
-      <div class="form-row">
-        <div>
-          <label class="inp-lbl">Topic</label>
-          <input id="mqttTopic" class="inp" value="esp32/pulsewave">
-        </div>
-        <div>
-      <label class="inp-lbl">Port (8083=WS / 8084=WSS)</label>
-          <input id="mqttPort" class="inp" value="8083" type="number">
-        </div>
-      </div>
+    function pushChart(v) {
+      data.push(v); data.shift();
+      ecgChart.data.datasets[0].data = [...data];
+      // Auto-scale Y
+      const valid = data.filter(x => x !== null);
+      if (valid.length > 10) {
+        const mn = Math.min(...valid), mx = Math.max(...valid);
+        const pad = Math.max(10, (mx - mn) * 0.12);
+        ecgChart.options.scales.y.suggestedMin = mn - pad;
+        ecgChart.options.scales.y.suggestedMax = mx + pad;
+      }
+      ecgChart.update('none');
+    }
 
-      <button id="connectBtn" class="btn-connect" onclick="toggleConnection()">Connect</button>
+    // ── WAVE QUEUE + rAF RENDERER ────────────────────────────────
+    // Nguyên tắc: MQTT đẩy điểm vào queue, rAF drain TOÀN BỘ mỗi frame.
+    // KHÔNG dùng TARGET_BUF vì: tốc độ render (60fps×2pts=120pts/s) >
+    // tốc độ nhập (25Hz×4pts=100pts/s) → queue drain liên tục → freeze.
+    // Fix: drain hết queue mỗi frame → sóng advance 4pts mỗi 40ms (2% chart width)
+    const waveQueue = [];
+    const MAX_QUEUE = 200;  // tối đa ~2s buffer phòng mạng chậm
 
-      <div class="hint">
-        JSON format:<br>
-        <code>{"wave":45.2,"bpm":75,"spo2":98,"bat":85}</code>
-      </div>
+    // pushRaw: đẩy vào data array, KHÔNG gọi update()
+    function pushRaw(v) {
+      data.push(v); data.shift();
+    }
 
-    </aside>
+    let pointsAccumulator = 0;
 
-    <!-- CHART PANEL -->
-    <div class="chart-panel">
-      <div class="chart-header">
-        <div class="chart-title">📈 ECG / PPG Waveform — Thời Gian Thực</div>
-        <div class="chart-stats">
-          HR: <span class="cs-green" id="statBpm">--</span>&nbsp;BPM &nbsp;|&nbsp;
-          SpO2: <span class="cs-blue" id="statSpo2">--</span>&nbsp;%
-        </div>
-      </div>
-      <div class="chart-wrap">
-        <canvas id="ecgChart"></canvas>
-      </div>
-    </div>
+    // rAF render loop — tiêu thụ queue theo tốc độ mượt mà ổn định (Jitter Buffer)
+    function renderFrame() {
+      if (waveQueue.length > 0) {
+        let pointsToRender = 0;
 
-  </div><!-- /.main -->
-</div><!-- /.app -->
+        // Cơ chế Jitter Buffer: Điều chỉnh tốc độ tiêu thụ queue tùy theo độ dài hàng đợi hiện tại
+        if (waveQueue.length > 150) {
+          // Bị dồn quá nhiều điểm (do lag mạng hoặc chuyển tab ẩn rồi quay lại)
+          // Vẽ thật nhanh (tối đa 6 điểm/frame) để đuổi kịp dữ liệu thời gian thực
+          pointsToRender = Math.min(waveQueue.length, 6);
+        } else if (waveQueue.length > 50) {
+          // Bắt đầu dồn nhẹ, vẽ nhanh hơn bình thường một chút (3 điểm/frame)
+          pointsToRender = 3;
+        } else if (waveQueue.length > 10) {
+          // Trạng thái bình thường, vẽ mượt mà xen kẽ 1 và 2 điểm (trung bình ~1.67 điểm/frame)
+          pointsAccumulator += 1.67;
+          pointsToRender = Math.floor(pointsAccumulator);
+          pointsAccumulator -= pointsToRender;
+        } else {
+          // Hàng đợi sắp cạn (mạng chậm/gián đoạn), vẽ chậm lại (1 điểm/frame) để chờ dữ liệu mới
+          pointsToRender = 1;
+        }
 
-<script>
-  // ── CHART SETUP ───────────────────────────────────
-  const canvas = document.getElementById('ecgChart');
-  const ctx    = canvas.getContext('2d');
-  const MAX_PTS = 200;
-  const data    = new Array(MAX_PTS).fill(null);
-  const labels  = new Array(MAX_PTS).fill('');
+        // Đảm bảo không rút quá số lượng điểm thực tế có trong queue
+        pointsToRender = Math.min(pointsToRender, waveQueue.length);
 
-  const ecgChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        data,
-        borderColor: '#10b981',
-        borderWidth: 1.8,
-        pointRadius: 0,
-        tension: 0.25,
-        fill: true,
-        backgroundColor: 'rgba(16,185,129,0.05)'
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: false,
-      plugins: { legend: { display: false }, tooltip: { enabled: false } },
-      scales: {
-        x: { display: false },
-        y: {
-          display: true,
-          grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(255,255,255,0.3)', maxTicksLimit: 6, font: { size: 10 } },
-          suggestedMin: -60, suggestedMax: 60
+        if (pointsToRender > 0) {
+          for (let i = 0; i < pointsToRender; i++) {
+            pushRaw(waveQueue.shift());
+          }
+
+          // Cập nhật biểu đồ
+          ecgChart.data.datasets[0].data = [...data];
+          const valid = data.filter(x => x !== null);
+          if (valid.length > 10) {
+            const mn = Math.min(...valid), mx = Math.max(...valid);
+            const pad = Math.max(10, (mx - mn) * 0.12);
+            ecgChart.options.scales.y.suggestedMin = mn - pad;
+            ecgChart.options.scales.y.suggestedMax = mx + pad;
+          }
+          ecgChart.update('none');
+        }
+      }
+      requestAnimationFrame(renderFrame);
+    }
+    requestAnimationFrame(renderFrame);
+
+    // ── FAKE ECG demo khi chưa kết nối ───────────────────────
+    // Chạy 10ms để đồng bộ với renderLoop, push vào queue
+    let fakeIdx = 0;
+    setInterval(() => {
+      if (!isConnected && waveQueue.length < MAX_QUEUE) {
+        let pos = fakeIdx % 100, v = 0;
+        if (pos === 10) v = 8;
+        else if (pos === 12) v = -12;
+        else if (pos === 14) v = 55;
+        else if (pos === 16) v = -22;
+        else if (pos === 18) v = 4;
+        else if (pos >= 35 && pos < 45) v = 12 * Math.sin((pos - 35) * Math.PI / 10);
+        else v = Math.random() * 1.5 - 0.75;
+        waveQueue.push(v);
+        fakeIdx++;
+      }
+    }, 10);
+
+    // ── Auto-detect HTTPS → dùng WSS (port 8084) ────────
+    window.addEventListener('DOMContentLoaded', () => {
+      if (location.protocol === 'https:') {
+        document.getElementById('mqttPort').value = '8084';
+        const hint = document.querySelector('.hint');
+        const note = document.createElement('div');
+        note.style.cssText = 'margin-top:6px;padding:6px 10px;border-radius:8px;font-size:.68rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7';
+        note.innerHTML = '🔒 HTTPS detected → dùng port <b>8084</b> (WSS)';
+        hint.after(note);
+      }
+    });
+
+    // ── SIGNAL WATCHDOG ────────────────────────────────────────
+    // Overlay chart và status card là 2 thứ độc lập, KHÔNG có thứ nào gọi thứ kia.
+    const noSignalOverlay = document.getElementById('noSignalOverlay');
+    const nsIcon = document.getElementById('nsIcon');
+    const nsText = document.getElementById('nsText');
+    const nsSub = document.getElementById('nsSub');
+
+    let lastDataTime = 0;          // timestamp lần cuối nhận MQTT
+    const CONN_TIMEOUT = 3000;     // 3s không có data → hiện NO SIGNAL
+
+    // Chỉ điều khiển overlay trên biểu đồ — KHÔNG chạm vào status card
+    function setChartOverlay(mode) {
+      // mode: 'hidden' | 'no_conn' | 'sensor_idle' | 'no_finger'
+      if (mode === 'hidden') {
+        noSignalOverlay.classList.remove('visible');
+      } else {
+        noSignalOverlay.classList.add('visible');
+        if (mode === 'no_conn') {
+          nsIcon.textContent = '📵';
+          nsText.textContent = 'NO SIGNAL';
+          nsSub.textContent = 'Waiting for device data...';
+        } else if (mode === 'sensor_idle') {
+          nsIcon.textContent = '📵';
+          nsText.textContent = 'SENSOR IDLE';
+          nsSub.textContent = 'Device not measuring';
+        } else if (mode === 'no_finger') {
+          nsIcon.textContent = '👆';
+          nsText.textContent = 'NO FINGER';
+          nsSub.textContent = 'Place finger on sensor to measure';
         }
       }
     }
-  });
 
-  function pushChart(v) {
-    data.push(v); data.shift();
-    ecgChart.data.datasets[0].data = [...data];
-    // Auto-scale Y
-    const valid = data.filter(x => x !== null);
-    if (valid.length > 10) {
-      const mn = Math.min(...valid), mx = Math.max(...valid);
-      const pad = Math.max(10, (mx - mn) * 0.12);
-      ecgChart.options.scales.y.suggestedMin = mn - pad;
-      ecgChart.options.scales.y.suggestedMax = mx + pad;
+    function onDataReceived(active, finger) {
+      lastDataTime = Date.now();
+      if (active === 0) {
+        setChartOverlay('sensor_idle');   // Sensor tắt
+      } else if (finger === 0) {
+        setChartOverlay('no_finger');     // Sensor bật nhưng không đặt tay
+      } else {
+        setChartOverlay('hidden');        // Đang đo bình thường → hiện sóng
+      }
     }
-    ecgChart.update('none');
-  }
 
-  // ── FAKE ECG demo khi chưa kết nối ────────────────
-  let fakeIdx = 0;
-  const fakeTimer = setInterval(() => {
-    if (!isConnected) {
-      let pos = fakeIdx % 100, v = 0;
-      if      (pos === 10) v = 8;
-      else if (pos === 12) v = -12;
-      else if (pos === 14) v = 55;
-      else if (pos === 16) v = -22;
-      else if (pos === 18) v = 4;
-      else if (pos >= 35 && pos < 45) v = 12 * Math.sin((pos - 35) * Math.PI / 10);
-      else v = Math.random() * 1.5 - 0.75;
-      pushChart(v);
-      fakeIdx++;
+    // Watchdog: chỉ kiểm tra kết nối MQTT, không đụng vào status card khi vẫn có kết nối
+    setInterval(() => {
+      const connected = lastDataTime > 0 && (Date.now() - lastDataTime) < CONN_TIMEOUT;
+      if (!connected) {
+        setChartOverlay('no_conn');         // Chart → NO SIGNAL
+        updateFallStatus('unknown');        // Status card → -- (chỉ khi mất kết nối)
+      }
+    }, 500);
+
+    // ── MQTT ──────────────────────────────────────────
+    let client = null, isConnected = false, lastBpm = 0;
+
+    function toggleConnection() {
+      isConnected ? disconnectMqtt() : connectMqtt();
     }
-  }, 40);
 
-  // ── Auto-detect HTTPS → dùng WSS (port 8084) ────────
-  window.addEventListener('DOMContentLoaded', () => {
-    if (location.protocol === 'https:') {
-      document.getElementById('mqttPort').value = '8084';
-      const hint = document.querySelector('.hint');
-      const note = document.createElement('div');
-      note.style.cssText = 'margin-top:6px;padding:6px 10px;border-radius:8px;font-size:.68rem;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);color:#6ee7b7';
-      note.innerHTML = '🔒 HTTPS detected → dùng port <b>8084</b> (WSS)';
-      hint.after(note);
+    function connectMqtt() {
+      const broker = document.getElementById('mqttBroker').value;
+      const port = +document.getElementById('mqttPort').value;
+      const topic = document.getElementById('mqttTopic').value;
+      const id = 'web_' + Math.random().toString(16).substr(2, 8);
+
+      client = new Paho.Client(broker, port, id);
+      client.onConnectionLost = () => { isConnected = false; setStatus(false, 'Mất kết nối'); };
+      client.onMessageArrived = onMsg;
+
+      setStatus(null, 'Đang kết nối...');
+      client.connect({
+        onSuccess: () => {
+          isConnected = true;
+          client.subscribe(topic);
+          setStatus(true, 'Kết nối: ' + topic);
+          data.fill(null); ecgChart.update('none');
+        },
+        onFailure: (e) => setStatus(false, 'Thất bại: ' + (e.errorMessage || e.errorCode)),
+        useSSL: port === 443 || port === 8084,
+        cleanSession: true,
+        keepAliveInterval: 30,
+        timeout: 10
+      });
     }
-  });
 
-  // ── MQTT ──────────────────────────────────────────
-  let client = null, isConnected = false, lastBpm = 0;
-
-  function toggleConnection() {
-    isConnected ? disconnectMqtt() : connectMqtt();
-  }
-
-  function connectMqtt() {
-    const broker = document.getElementById('mqttBroker').value;
-    const port   = +document.getElementById('mqttPort').value;
-    const topic  = document.getElementById('mqttTopic').value;
-    const id     = 'web_' + Math.random().toString(16).substr(2, 8);
-
-    client = new Paho.Client(broker, port, id);
-    client.onConnectionLost = () => { isConnected = false; setStatus(false, 'Mất kết nối'); };
-    client.onMessageArrived = onMsg;
-
-    setStatus(null, 'Đang kết nối...');
-    client.connect({
-      onSuccess: () => {
-        isConnected = true;
-        client.subscribe(topic);
-        setStatus(true, 'Kết nối: ' + topic);
-        data.fill(null); ecgChart.update('none');
-      },
-      onFailure: (e) => setStatus(false, 'Thất bại: ' + (e.errorMessage || e.errorCode)),
-      useSSL: port === 443 || port === 8084,
-      cleanSession: true,
-      keepAliveInterval: 30,
-      timeout: 10
-    });
-  }
-
-  function disconnectMqtt() {
-    if (client) client.disconnect();
-    isConnected = false;
-    setStatus(false, 'Disconnected');
-  }
-
-  function onMsg(msg) {
-    try {
-      let d;
-      try { d = JSON.parse(msg.payloadString); }
-      catch { d = { wave: parseFloat(msg.payloadString) }; }
-
-      if (d.wave  !== undefined) pushChart(d.wave);
-      if (d.bpm   !== undefined) updateBpm(d.bpm);
-      if (d.spo2  !== undefined) updateSpo2(d.spo2);
-      if (d.bat   !== undefined) updateBat(d.bat);
-      if (d.volt  !== undefined) document.getElementById('voltValue').textContent = parseFloat(d.volt).toFixed(2);
-      updateFallStatus(d.fall || 0, d.impact || 0);
-    } catch(e) {}
-  }
-
-  // ── METRIC UPDATERS ───────────────────────────────
-  function updateBpm(v) {
-    const r = Math.round(v);
-    document.getElementById('bpmValue').textContent  = r > 0 ? r : '--';
-    document.getElementById('statBpm').textContent   = r > 0 ? r : '--';
-    if (r > 0 && r !== lastBpm) {
-      const ic = document.getElementById('heartIcon');
-      ic.classList.remove('hb-anim'); void ic.offsetWidth; ic.classList.add('hb-anim');
-      lastBpm = r;
+    function disconnectMqtt() {
+      if (client) client.disconnect();
+      isConnected = false;
+      setStatus(false, 'Disconnected');
     }
-  }
 
-  function updateSpo2(v) {
-    const r = Math.round(v);
-    document.getElementById('spo2Value').textContent = r > 0 ? r : '--';
-    document.getElementById('statSpo2').textContent  = r > 0 ? r : '--';
-  }
+    function onMsg(msg) {
+      try {
+        let d;
+        try { d = JSON.parse(msg.payloadString); }
+        catch { d = { wave: parseFloat(msg.payloadString) }; }
 
-  function updateBat(v) {
-    if (v >= 0) {
-      document.getElementById('batValue').textContent = parseFloat(v).toFixed(1);
-      document.getElementById('batBar').style.width   = Math.min(v, 100) + '%';
+        // 1. Cập nhật OVERLAY biểu đồ (dựa trên active + finger)
+        const activeVal = (d.active !== undefined) ? d.active : 1;
+        const fingerVal = (d.finger !== undefined) ? d.finger : 1;  // firmware cũ → coi là có ngón tay
+        onDataReceived(activeVal, fingerVal);
+
+        // 2. Đẩy dữ liệu sóng vào queue (renderLoop sẽ vẽ từng điểm một một)
+        if (d.wave !== undefined) {
+          const samples = Array.isArray(d.wave) ? d.wave : [d.wave];
+          samples.forEach(v => {
+            if (waveQueue.length < MAX_QUEUE) waveQueue.push(v);
+          });
+        }
+
+        // 3. Cập nhật số liệu
+        if (d.bpm !== undefined) updateBpm(d.bpm);
+        if (d.spo2 !== undefined) updateSpo2(d.spo2);
+        if (d.bat !== undefined) updateBat(d.bat);
+        if (d.volt !== undefined) document.getElementById('voltValue').textContent = parseFloat(d.volt).toFixed(2);
+
+        // 4. Cập nhật STATUS CARD (luôn chạy, độc lập với overlay)
+        updateFallStatus(d.fall || 0, d.impact || 0);
+      } catch (e) { }
     }
-  }
 
-  function updateFallStatus(fall, impact) {
-    const card = document.getElementById('statusCard');
-    const icon = document.getElementById('statusIcon');
-    const txt  = document.getElementById('statusTxt');
-    card.className = 'status-card';
-    if (fall) {
-      card.classList.add('danger');
-      icon.textContent = '🚨'; txt.textContent = 'TÉ NGÃ!';
-    } else if (impact) {
-      card.classList.add('warn');
-      icon.textContent = '⚠️'; txt.textContent = 'VA CHẠM...';
-    } else {
-      icon.textContent = '🟢'; txt.textContent = 'AN TOÀN';
+    // ── METRIC UPDATERS ───────────────────────────────
+    function updateBpm(v) {
+      const r = Math.round(v);
+      document.getElementById('bpmValue').textContent = r > 0 ? r : '--';
+      document.getElementById('statBpm').textContent = r > 0 ? r : '--';
+      if (r > 0 && r !== lastBpm) {
+        const ic = document.getElementById('heartIcon');
+        ic.classList.remove('hb-anim'); void ic.offsetWidth; ic.classList.add('hb-anim');
+        lastBpm = r;
+      }
     }
-  }
 
-  function setStatus(connected, text) {
-    const badge = document.getElementById('badge');
-    const btn   = document.getElementById('connectBtn');
-    document.getElementById('badgeText').textContent = text;
-
-    if (connected === true) {
-      badge.className = 'badge connected';
-      btn.textContent = 'Disconnect';
-      btn.className   = 'btn-connect disconnect';
-    } else if (connected === false) {
-      badge.className = 'badge';
-      btn.textContent = 'Connect';
-      btn.className   = 'btn-connect';
+    function updateSpo2(v) {
+      const r = Math.round(v);
+      document.getElementById('spo2Value').textContent = r > 0 ? r : '--';
+      document.getElementById('statSpo2').textContent = r > 0 ? r : '--';
     }
-  }
-</script>
+
+    function updateBat(v) {
+      if (v >= 0) {
+        document.getElementById('batValue').textContent = parseFloat(v).toFixed(1);
+        document.getElementById('batBar').style.width = Math.min(v, 100) + '%';
+      }
+    }
+
+    function updateFallStatus(fall, impact) {
+      const card = document.getElementById('statusCard');
+      const icon = document.getElementById('statusIcon');
+      const txt = document.getElementById('statusTxt');
+      card.className = 'status-card';
+      if (fall === 'unknown') {
+        // Không có tín hiệu → hiện gạch ngang
+        card.style.borderColor = 'rgba(255,255,255,0.07)';
+        icon.textContent = '—';
+        txt.textContent = '--';
+        txt.style.color = 'rgba(255,255,255,0.3)';
+      } else {
+        card.style.borderColor = '';  // Xóa override inline, trả lại CSS class
+        txt.style.color = '';
+        if (fall) {
+          card.classList.add('danger');
+          icon.textContent = '🚨'; txt.textContent = 'TÉ NGÃ!';
+        } else if (impact) {
+          card.classList.add('warn');
+          icon.textContent = '⚠️'; txt.textContent = 'VA CHẠM...';
+        } else {
+          icon.textContent = '🟢'; txt.textContent = 'AN TOÀN';
+        }
+      }
+    }
+
+    function setStatus(connected, text) {
+      const badge = document.getElementById('badge');
+      const btn = document.getElementById('connectBtn');
+      document.getElementById('badgeText').textContent = text;
+
+      if (connected === true) {
+        badge.className = 'badge connected';
+        btn.textContent = 'Disconnect';
+        btn.className = 'btn-connect disconnect';
+      } else if (connected === false) {
+        badge.className = 'badge';
+        btn.textContent = 'Connect';
+        btn.className = 'btn-connect';
+      }
+    }
+  </script>
 </body>
+
 </html>
